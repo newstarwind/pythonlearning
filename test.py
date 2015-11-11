@@ -1,6 +1,7 @@
-print "hello world!"
-
 def function():
 	print "hello python"
 
-function()
+def say():
+	print "this is David saying: hello python"
+
+say()
