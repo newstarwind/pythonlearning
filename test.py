@@ -1,6 +1,5 @@
 # coding=utf-8
 import tushare as ts
-import numpy as np
 import pandas as pd
 
 # print ts.__version__
@@ -13,18 +12,18 @@ import pandas as pd
 # print(date)
 
 
-#Select row by label
-# data = ts.get_h_data('002337') #前复权
-# day_data = data.loc['2015-09-15']
-# print(day_data)
-# print(data.info())
+# Select row by label
+data = ts.get_h_data('002337') #前复权
+day_data = data.loc['2015-09-15']
+print(day_data)
+print(data.info())
 
 
 # Pandas.DataFrame
-# one and two are likely columne name 
+# one and two are likely columne name
 # a, b, c, d are likely the row label
-# d = {'one' : pd.Series([1.,2.,3.],index = ['a','b','c']),
-# 	 'two' : pd.Series([1.,2.,3.,4.], index = ['a','b','c','d'])}
+d = {'one' : pd.Series([1.,2.,3.],index = ['a','b','c']),
+	 'two' : pd.Series([1.,2.,3.,4.], index = ['a','b','c','d'])}
 
 # df = pd.DataFrame(d)
 # print(df)
