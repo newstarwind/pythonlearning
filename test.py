@@ -18,13 +18,6 @@ log_path = '/Users/david/GitHub/pythonlearning/stock_data/'
 current_date = '2015-12-30'
 download = []
 
-# def getAllDownloaded():
-#     f = open(log_path + 'download.txt', 'r')
-#     for line in f:
-#         download.append(line.strip().lstrip().rstrip())
-#     f.close()
-#     print(download)
-
 def getDownloaded():
     for file in os.listdir(path):
         if file.endswith('.csv'):
@@ -73,47 +66,69 @@ def getStocks():
 # getStocks()
 
 
-
 report_start_year = 1993
 report_end_year = 2015
 
 def reportByYear(year, quarter):
     return str(year) + '-' + str(quarter) + '.csv'
 
+def profitByYear(year, quarter):
+    return str(year) + '-' + str(quarter) + '-profile' + '.csv' 
 
+def growthByYear(year, quarter):
+    return str(year) + '-' + str(quarter) + '-growth' + '.csv'
 
 def getQuerterReport(year):
     for q in [1,2,3,4]:
         getDownloaded()
         if not isDownloaded(reportByYear(year,q)):
             try:
-                print('Dealing withe report of ' + str(year) + ' and quarter is ' + str(q))
+                print('Report of ' + str(year) + ' and quarter is ' + str(q))
                 report_df = ts.get_report_data(year,q)
                 report_df.to_csv(path + reportByYear(year, q))
                 time.sleep(5)
             except Exception:
-                logError('When dealing with report: ' + str(year) + '-' + str(q) +
+                logError('Report: ' + str(year) + '-' + str(q) +
                 ' there is problem, will skip it. ')
 
+def getProfileReport(year):
+    for q in [1,2,3,4]:
+        getDownloaded()
+        if not isDownloaded(profitByYear(year,q)):
+            try:
+                print('Profit of ' + str(year) + ' and quarter is ' + str(q))
+                profit_df = ts.get_profit_data(year,q)
+                profit_df.to_csv(path + profitByYear(year, q))
+                time.sleep(5)
+            except Exception:
+                logError('Profit: ' + str(year) + '-' + str(q) +
+                ' there is problem, will skip it. ')
+
+
+def getGrowthReport(year):
+    for q in [1,2,3,4]:
+        getDownloaded()
+        if not isDownloaded(growthByYear(year, q)):
+            try:
+                print('Growth of ' + str(year) + ' and quarter is ' + str(q))
+                growth_df = ts.get_growth_data(year,q)
+                growth_df.to_csv(path + growthByYear(year, q))
+                time.sleep(5)
+            except Exception:
+                logError('Growth: ' + str(year) + '-' + str(q) +
+                ' there is problem, will skip it. ')
+
+                
 def getReports(startYear, endYear):
     for year in range(startYear, endYear + 1):
         getQuerterReport(year)
+        getProfileReport(year)
+        getGrowthReport(year)
             
 getReports(report_start_year,report_end_year)
 
-# Get Stock price data
-# df = ts.get_h_data(code,start='2002-01-01',end='2015-12-30')
-# df.to_excel(path + code + '.xlsx')
+#todo: get_debtpaying_data
+#todo: get_cashflow_data
+#todo: get_operation_data
 
-
-# Get quarterly report data for all stocks
-# df = ts.get_report_data(2014,3)
-# df.to_excel(path + '2014-3.xlsx')
-
-# Select row by label
-# data = ts.get_h_data('002337') #前复权
-
-# day_data = data.loc['2015-09-15']
-# print(day_data)
-# print(data.info())
 
