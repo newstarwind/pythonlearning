@@ -9,11 +9,6 @@ import os
 reload(sys)                         # encode problem resolving
 sys.setdefaultencoding('utf-8')     # encode problem resolving
 
-# print ts.__version__
-# df = ts.get_stock_basics()
-# date = df.ix['600848']['timeToMarket']  # 上市日期YYYYMMDD
-# print(date)
-
 path = '/Users/david/GitHub/pythonlearning/stock_data/'
 log_path = '/Users/david/GitHub/pythonlearning/stock_data/'
 
@@ -21,7 +16,6 @@ log_path = '/Users/david/GitHub/pythonlearning/stock_data/'
 # log_path = 'H:\\stock_data\\'
 
 current_date = '2015-12-30'
-sample_code = ['600350', '600848']
 download = []
 
 # def getAllDownloaded():
@@ -36,7 +30,13 @@ def getDownloaded():
         if file.endswith('.csv'):
             download.append(file) 
 
-getDownloaded()
+
+def logError(s):
+    f = open(log_path + 'log.txt','a')            
+    f.writelines(s)
+    traceback.print_exc(file=f)
+    f.flush()
+    f.close()
 
 
 def stringToDate(a):
@@ -44,9 +44,8 @@ def stringToDate(a):
     s = np.array2string(a)
     return s[:4] + '-' + s[4:6] + '-' + s[6:8]
 
-
-def isDownloaded(code):
-    return download.count(code) > 0
+def isDownloaded(name):
+    return download.count(name) > 0
 
 def nameByCode(code):
     return code + '.csv'
@@ -58,12 +57,8 @@ def getStockPrice(code, startDate, endDate):
         price_df.to_csv(path + nameByCode(code))
         print('\n' + code + ' is done!')
     except Exception:
-        print('When dealing with code: ' + code +
+        logError('When dealing with code: ' + code +
               ' there is problem, will skip it. ')
-        f = open(log_path + 'log.txt', 'a')
-        traceback.print_exc(file=f)
-        f.flush()
-        f.close()
 
 def getStocks():
     df = ts.get_stock_basics()
@@ -75,8 +70,36 @@ def getStocks():
             getStockPrice(code, startDate, current_date)
             time.sleep(5)
 
-getStocks()
+# getStocks()
 
+
+
+report_start_year = 1993
+report_end_year = 2015
+
+def reportByYear(year, quarter):
+    return str(year) + '-' + str(quarter) + '.csv'
+
+
+
+def getQuerterReport(year):
+    for q in [1,2,3,4]:
+        getDownloaded()
+        if not isDownloaded(reportByYear(year,q)):
+            try:
+                print('Dealing withe report of ' + str(year) + ' and quarter is ' + str(q))
+                report_df = ts.get_report_data(year,q)
+                report_df.to_csv(path + reportByYear(year, q))
+                time.sleep(5)
+            except Exception:
+                logError('When dealing with report: ' + str(year) + '-' + str(q) +
+                ' there is problem, will skip it. ')
+
+def getReports(startYear, endYear):
+    for year in range(startYear, endYear + 1):
+        getQuerterReport(year)
+            
+getReports(report_start_year,report_end_year)
 
 # Get Stock price data
 # df = ts.get_h_data(code,start='2002-01-01',end='2015-12-30')

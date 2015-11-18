@@ -34,3 +34,5 @@
 stock_basics.csv
 
 *.csv
+
+stock_data/log.txt
