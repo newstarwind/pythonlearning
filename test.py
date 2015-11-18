@@ -5,6 +5,7 @@ import numpy as np
 import time
 import traceback
 import sys
+import os
 reload(sys)                         # encode problem resolving
 sys.setdefaultencoding('utf-8')     # encode problem resolving
 
@@ -13,19 +14,29 @@ sys.setdefaultencoding('utf-8')     # encode problem resolving
 # date = df.ix['600848']['timeToMarket']  # 上市日期YYYYMMDD
 # print(date)
 
-# path = '/Users/david/GitHub/pythonlearning/stock_data/'
-path = 'H:\\stock_data\\'
-log_path = 'H:\\stock_data\\'
+path = '/Users/david/GitHub/pythonlearning/stock_data/'
+log_path = '/Users/david/GitHub/pythonlearning/stock_data/'
+
+# path = 'H:\\stock_data\\'
+# log_path = 'H:\\stock_data\\'
+
 current_date = '2015-12-30'
 sample_code = ['600350', '600848']
 download = []
 
-def getAllDownloaded():
-    f = open(log_path + 'download.txt', 'r')
-    for line in f:
-        download.append(line.strip().lstrip().rstrip())
-    f.close()
-    print(download)
+# def getAllDownloaded():
+#     f = open(log_path + 'download.txt', 'r')
+#     for line in f:
+#         download.append(line.strip().lstrip().rstrip())
+#     f.close()
+#     print(download)
+
+def getDownloaded():
+    for file in os.listdir(path):
+        if file.endswith('.csv'):
+            download.append(file) 
+
+getDownloaded()
 
 
 def stringToDate(a):
@@ -33,23 +44,18 @@ def stringToDate(a):
     s = np.array2string(a)
     return s[:4] + '-' + s[4:6] + '-' + s[6:8]
 
-def recordDownload(code):
-    download.append(code)
-    f = open(log_path + 'download.txt','a')
-    f.write(code + '\n')
-    f.flush()
-    f.close()
-
 
 def isDownloaded(code):
-    print(download)
-    return download.count(code)
+    return download.count(code) > 0
+
+def nameByCode(code):
+    return code + '.csv'
 
 def getStockPrice(code, startDate, endDate):
     try:
         print(code + ' is published at ' + startDate + ' is in processing...')
         price_df = ts.get_h_data(code, start=startDate, end=endDate)
-        price_df.to_csv(path + code + '.csv')
+        price_df.to_csv(path + nameByCode(code))
         print('\n' + code + ' is done!')
     except Exception:
         print('When dealing with code: ' + code +
@@ -61,14 +67,14 @@ def getStockPrice(code, startDate, endDate):
 
 def getStocks():
     df = ts.get_stock_basics()
+    
     for code in df.index:
-        if !isDownloaded(code):
+        getDownloaded()
+        if not isDownloaded(nameByCode(code)):
             startDate = stringToDate(df.ix[code]['timeToMarket'])  # 上市日期
             getStockPrice(code, startDate, current_date)
-            recordDownload(code)
             time.sleep(5)
 
-getAllDownloaded()
 getStocks()
 
 
