@@ -9,11 +9,11 @@ import os
 reload(sys)                         # encode problem resolving
 sys.setdefaultencoding('utf-8')     # encode problem resolving
 
-path = '/Users/david/GitHub/pythonlearning/stock_data/'
-log_path = '/Users/david/GitHub/pythonlearning/stock_data/'
+# path = '/Users/david/GitHub/pythonlearning/stock_data/'
+# log_path = '/Users/david/GitHub/pythonlearning/stock_data/'
 
-# path = 'H:\\stock_data\\'
-# log_path = 'H:\\stock_data\\'
+path = 'H:\\stock_data\\'
+log_path = 'H:\\stock_data\\'
 
 current_date = '2015-12-30'
 download = []
@@ -21,15 +21,16 @@ download = []
 def getDownloaded():
     for file in os.listdir(path):
         if file.endswith('.csv'):
-            download.append(file) 
+            download.append(file)
 
 
 def logError(s):
-    f = open(log_path + 'log.txt','a')            
+    f = open(log_path + 'log.txt', 'a')
     f.writelines(s)
     traceback.print_exc(file=f)
     f.flush()
     f.close()
+
 
 
 def stringToDate(a):
@@ -50,12 +51,13 @@ def getStockPrice(code, startDate, endDate):
         price_df.to_csv(path + nameByCode(code))
         print('\n' + code + ' is done!')
     except Exception:
+
         logError('When dealing with code: ' + code +
               ' there is problem, will skip it. ')
 
 def getStocks():
     df = ts.get_stock_basics()
-    
+
     for code in df.index:
         getDownloaded()
         if not isDownloaded(nameByCode(code)):
@@ -63,7 +65,7 @@ def getStocks():
             getStockPrice(code, startDate, current_date)
             time.sleep(5)
 
-# getStocks()
+getStocks()
 
 
 report_start_year = 1993
@@ -73,10 +75,13 @@ def reportByYear(year, quarter):
     return str(year) + '-' + str(quarter) + '.csv'
 
 def profitByYear(year, quarter):
-    return str(year) + '-' + str(quarter) + '-profile' + '.csv' 
+    return str(year) + '-' + str(quarter) + '-profile' + '.csv'
 
 def growthByYear(year, quarter):
     return str(year) + '-' + str(quarter) + '-growth' + '.csv'
+
+def debtByYear(year, quarter):
+    return str(year) + '-' + str(quarter) + '-debt' + '.csv'
 
 def getQuerterReport(year):
     for q in [1,2,3,4]:
@@ -118,14 +123,29 @@ def getGrowthReport(year):
                 logError('Growth: ' + str(year) + '-' + str(q) +
                 ' there is problem, will skip it. ')
 
-                
+
+def getDebtReport(year):
+    for q in [1,2,3,4]:
+        getDownloaded()
+        if not isDownloaded(debtByYear(year,q)):
+            try:
+                print('Debt of ' + str(year) + ' and quarter is ' + str(q))
+                debt_df = ts.get_debtpaying_data(year,q)
+                debt_df.to_csv(path + debtByYear(year,q))
+                time.sleep(5)
+            except Exception:
+                logError('Debt: ' + str(year) + '-' + str(q) +
+                ' there is problem, will skip it. '    )
+
 def getReports(startYear, endYear):
     for year in range(startYear, endYear + 1):
         getQuerterReport(year)
         getProfileReport(year)
         getGrowthReport(year)
-            
-getReports(report_start_year,report_end_year)
+        getDebtReport(year)
+
+# getReports(report_start_year,report_end_year)
+
 
 #todo: get_debtpaying_data
 #todo: get_cashflow_data
