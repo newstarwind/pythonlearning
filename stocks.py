@@ -9,11 +9,14 @@ import os
 reload(sys)                         # encode problem resolving
 sys.setdefaultencoding('utf-8')     # encode problem resolving
 
-# path = '/Users/david/GitHub/pythonlearning/stock_data/'
-# log_path = '/Users/david/GitHub/pythonlearning/stock_data/'
+report_start_year = 1993
+report_end_year = 2015
 
-path = 'H:\\stock_data\\'
-log_path = 'H:\\stock_data\\'
+path = '/Users/david/GitHub/pythonlearning/stock_data/'
+log_path = '/Users/david/GitHub/pythonlearning/stock_data/'
+
+# path = 'H:\\stock_data\\'
+# log_path = 'H:\\stock_data\\'
 
 current_date = '2015-12-30'
 download = []
@@ -65,11 +68,6 @@ def getStocks():
             getStockPrice(code, startDate, current_date)
             time.sleep(5)
 
-getStocks()
-
-
-report_start_year = 1993
-report_end_year = 2015
 
 def reportByYear(year, quarter):
     return str(year) + '-' + str(quarter) + '.csv'
@@ -145,9 +143,8 @@ def getReports(startYear, endYear):
         getDebtReport(year)
 
 # getReports(report_start_year,report_end_year)
+# getStocks()
 
-
-#todo: get_debtpaying_data
 #todo: get_cashflow_data
 #todo: get_operation_data
 
