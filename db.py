@@ -8,11 +8,8 @@ db_path = '/Users/david/GitHub/pythonlearning/stock_data/stocks.db'
 
 table_name = 'stock_price'
 
-conn = sqlite3.connect(db_path)
-c = conn.cursor()
-
-
-# c.execute('drop table stocks')
+# conn = sqlite3.connect(db_path)
+# c = conn.cursor()
 
 # Create the table in sqlite
 # Stocks ['code','date', 'open', 'high', 'close', 'low', 'volume', 'amount']
@@ -35,22 +32,29 @@ c = conn.cursor()
 #             ]
 # c.executemany('INSERT INTO stocks VALUES (?,?,?,?,?)', purchases)
 
-# Read data from csv file
-# df = pd.read_csv(stocks.path + '000001.csv')
+def readPrice(code):
+    "Read data from csv file" 
+    df = pd.read_csv(stocks.path + stocks.nameByCode(code))
+    return df
 
-# Change the columns and add 'code' in columns
-# df['code'] = '000001'
-# cols = df.columns.tolist()
-# cols = cols[-1:] + cols[:-1]
-# df = df[cols]
+def addCodeColumn(df):
+    "Change the columns and add 'code' as the first columns"
+    df['code'] = '000001'
+    cols = df.columns.tolist()
+    cols = cols[-1:] + cols[:-1]
+    df = df[cols]
 
-# Insert to db.stocks
-# df.to_sql(table_name, conn, if_exists='append', index = False)
+def insertPrice(df,conn):
+    'Insert to stocks_price'
+    df.to_sql(table_name, conn, if_exists='append', index = False)
 
-# Read data from sqlite to dataframe
-df = pd.read_sql('select * from ' + table_name + ' order by date asc ', con = conn)
+def queryCodePrice(code,conn):
+    "Read price data from table 'stock_price' to dataframe, please notice the params must be set into '?' "
+    df = pd.read_sql('select * from ' + table_name + ' where code = ?' , con = conn, params = [code])
+    return df
 
-conn.commit()
+conn = sqlite3.connect(db_path)    
+df = queryCodePrice('000001', conn)
 conn.close()
 
 print(df.tail(3))
