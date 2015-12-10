@@ -68,7 +68,7 @@
 净资产收益率同比增长率(%) : net asset return rate growth rate(%)
 流动比率() : current ratio
 速动比率() : quick ratio
-保守速动比率() :
+保守速动比率() : conservative quick rate
 产权比率() : equity ratio
 营业周期() : operating cycle
 存货周转天数() : days sales of inventory
@@ -149,39 +149,39 @@
 生产性生物资产(万元) : productive biological assets(10k)
 油气资产(万元) : oil and natural gas assets(10k)
 专项储备(万元) : special reserves(10k)
-一般风险准备(万元) :
-客户资金存款(万元) :
-交易席位费(万元) :
-可出售金融资产(万元) :
-总资产(万元) :
-代理买卖证券款(万元) :
-代理承销证券款(万元) :
-其他负债(万元) :
-总负债(万元) :
-代理买卖证券业务净收入(万元) :
-证券承销业务净收入(万元) :
-受托客户资产管理业务净收入(万元) :
-取得投资收益收到的现金(万元) :
-收回投资收到的现金(万元) :
-定期存款(万元) :
-保户质押贷款(万元) :
-应收保费(万元) :
-独立账户资产(万元) :
-其他资产(万元) :
-预收保费(万元) :
-应付手续费及佣金(万元) :
-应付赔付款(万元) :
-应付保单红利(万元) :
-独立账户负债(万元) :
-资本公积(万元) :
-已赚保费(万元) :
-保险业务收入(万元) :
-提取保险责任准备金(万元) :
-赔付支出(万元) :
-退保金(万元) :
-分保费用(万元) :
-保单红利支出(万元) :
-收到原保险合同保费取得的现金(万元) :
-保户储金及投资款净增加额(万元) :
-支付原保险合同赔付款项的现金(万元) :
-支付保单红利的现金(万元):
+一般风险准备(万元) : provision for normal risks(10k)
+客户资金存款(万元) : deposits from customers(10k)
+交易席位费(万元) : transaction seat fee(10k)
+可出售金融资产(万元) : available-for-sale financial assets(10k)
+总资产(万元) : total assets(10k)
+代理买卖证券款(万元) : funds received as agent of stock exchange(10k)
+代理承销证券款(万元) : funds received as stock underwrite(10k)
+其他负债(万元) : other liabilities(10k)
+总负债(万元) : total liabilities(10k)
+代理买卖证券业务净收入(万元) : funds received as agent of stock exchange(10k)
+证券承销业务净收入(万元) : funds received as stock underwrite(10k)
+受托客户资产管理业务净收入(万元) : net income of entrusted assets management business(10k)
+取得投资收益收到的现金(万元) : cash received from returns on investments(10k)
+收回投资收到的现金(万元) : cash received from disposals and withdraw on investment(10k)
+定期存款(万元) : term deposits(10k)
+保户质押贷款(万元) : secured loans(10k)
+应收保费(万元) : insurance premiums receivable(10k)
+独立账户资产(万元) :  segregated account asset(10k)
+其他资产(万元) : other asset(10k)
+预收保费(万元) : advance premium(10k)
+应付手续费及佣金(万元) : handling charges and commissions payable(10k)
+应付赔付款(万元) : compensation payable(10k)
+应付保单红利(万元) : policy dividend payable(10k)
+独立账户负债(万元) :  segregated account liabilities(10k)
+资本公积(万元) : capital reserves(10k)
+已赚保费(万元) : insurance premiums earned(10k)
+保险业务收入(万元) : insurance business income(10k)
+提取保险责任准备金(万元) : net provision for insurance contracts(10k)
+赔付支出(万元) : payments for insurance claims(10k)
+退保金(万元) : refund of insurance premiums(10k)
+分保费用(万元) : cession charges(10k)
+保单红利支出(万元) : commissions on insurance policies(10k)
+收到原保险合同保费取得的现金(万元) : cash premiums received on original insurance contracts(10k)
+保户储金及投资款净增加额(万元) : net increase in deposits and investments from insurers(10k)
+支付原保险合同赔付款项的现金(万元) : payments of claims for original insurance contracts(10k)
+支付保单红利的现金(万元) : commissions on insurance policies paid(10k)
