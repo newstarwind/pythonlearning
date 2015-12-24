@@ -161,8 +161,8 @@ def getReports(startYear, endYear):
 
 
 def queryBasic(symbol):
+    conn = sqlite3.connect(db.db_path)
     try:
-        conn = sqlite3.connect(db.db_path)
         df = pd.read_sql('select * from ' + db.stock_basics +
                          ' where code = ?', con=conn, params=[symbol])
         return df
@@ -173,8 +173,8 @@ def queryBasic(symbol):
 
 def getAllStocks():
     '返回以股票代码为索引的所有股票的名称，行业，上市时间'
+    conn = sqlite3.connect(db.db_path)
     try:
-        conn = sqlite3.connect(db.db_path)
         # df = pd.read_sql('select code, name, industry, timeToMarket from ' + db.stock_basics, con=conn, index_col = ['code'])
         df = pd.read_sql('select code, name, industry, timeToMarket from ' + db.stock_basics, con=conn)
         return df

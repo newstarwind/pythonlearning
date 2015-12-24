@@ -4,9 +4,18 @@ import pandas as pd
 import sys
 import price
 import stocks
+import traceback
+from pandas import Series
+from db import insertMeasures2local
+from db import queryMeasures
+from db import querylocalReportsOf
+from db import start_date
+from db import LOCAL
+from pandas import datetime
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
+
 
 # 当前股价 price
 # 当前市值 size                                                               【debt_58 * price】
@@ -22,162 +31,264 @@ sys.setdefaultencoding("utf-8")
 # 净资产收益率（ROE）= Net Profit / Equity                                    【profit_15/debt_24】
 # 营业收入(Operating Revenue)【在利润表上可以直接查到】                       【profit_5】
 # 营业利润(销售利润) Sale Profit： 【在利润表上可以查到】                     【profit_7】
+# 杠杆率 Leverage: 总资产 / 股东权益                                          【debt_11/debt_24】
 # EV：市场价值 + 负债 - 减去现金                                              【debt_58*price + debt_79 - debt_1】
 # EBIT: 净利润＋所得税＋利息                                                  【profit_15 + profit_14 + profit_2】
 # EBITDA = EBIT + 折旧 + 摊销
-
-sql_debt = "select top 1 * from dbo.FinancialDebt where symbol = ? order by date desc"
-sql_main = 'select top 1 * from dbo.FinancialMain where symbol = ? order by date desc'
-sql_profit = 'select top 1 * from dbo.FinancialProfit where symbol = ? order by date desc'
-
-
-def setDebt(symbol):
-    global DEBT
-    try:
-        conn = p.connect("DSN=MyDB;UID=tradehero_api;PWD=__sa90070104th__")
-        DEBT = pd.read_sql(sql_debt, con=conn, params=[symbol])
-    except Exception, e:
-        raise e
-    finally:
-        conn.close()
-
-
-def setMain(symbol):
-    global MAIN
-    try:
-        conn = p.connect("DSN=MyDB;UID=tradehero_api;PWD=__sa90070104th__")
-        MAIN = pd.read_sql(sql_main, con=conn, params=[symbol])
-    except Exception, e:
-        raise e
-    finally:
-        conn.close()
-
-
-def setProfit(symbol):
-    global PROFIT
-    try:
-        conn = p.connect("DSN=MyDB;UID=tradehero_api;PWD=__sa90070104th__")
-        PROFIT = pd.read_sql(sql_profit, con=conn, params=[symbol])
-    except Exception, e:
-        raise e
-    finally:
-        conn.close()
-
+# 自由现金流(Free Cash Flow, FCF), Capex
+# FCF = 营运现金流(cash_7) - Interest(profit_2) - Tax(profit_24) - Capex (cash_20)
+# 现金收益率: 自由现金流 / EV
+# 清理哪些是累计值，哪些是当前值，比如EPS是季度累计值，每个季度往后累加，直至年度 todo
 
 def init(symbol):
-    setMain(symbol)
-    setDebt(symbol)
-    setProfit(symbol)
+    global REPORTS
+    try:
+        REPORTS = querylocalReportsOf(symbol)
+    except Exception, e:
+        raise e
 
+def getReportsBy(date):
+    global REPORTS
+    return REPORTS[REPORTS.date == date]
 
-def getSize(symbol):
-    global DEBT
-    price_close = price.getClose(symbol)
-    amount = DEBT['debt_58'][0] * price_close
+def getSize(symbol, date):
+    '当前市值 = 总股本数 * 股价'
+    df = getReportsBy(date)
+    price_close = price.getCloseAt(symbol,date, local = LOCAL)
+    amount = df['debt_58'].iloc[0] * price_close
     return amount
 
-
-def getSize4Bank(symbol):
+def getSize4Bank(symbol, date):
     '对于银行股，使用debt_20作为总股本数，而不是debt_58'
-    global DEBT
-    price_close = price.getClose(symbol)
-    amount = DEBT['debt_20'][0] * price_close
+    df = getReportsBy(date)
+    price_close = price.getCloseAt(symbol,date, local = LOCAL)
+    amount = df['debt_20'].iloc[0] * price_close
     return amount
 
+def getEPS(symbol,date):
+    '每股收益'
+    df = getReportsBy(date)
+    eps = df['main_1'].iloc[0]
+    return eps
 
-def getPE(symbol):
-    global MAIN
-    price_close = price.getClose(symbol)
-    pe = price_close / MAIN['main_1'][0]
+
+def getPE(symbol,date):
+    '市盈率 PE = Price / 每股收益'
+    df = getReportsBy(date)
+    price_close = price.getCloseAt(symbol,date, local = LOCAL)
+    print('price is : ' + str(price_close))
+    pe = price_close / df['main_1'].iloc[0]
+    print("eps is : " + str(df['main_1'].iloc[0]))
     return pe
 
-
-def getPB(symbol):
-    global MAIN
-    price_close = price.getClose(symbol)
-    pb = price_close / MAIN['main_7'][0]
+def getPB(symbol,date):    
+    '市净率 PB = price / 每股净资产'
+    df = getReportsBy(date)
+    price_close = price.getCloseAt(symbol, date, local = LOCAL)
+    pb = price_close / df['main_7'].iloc[0]
     return pb
 
-
-def getPS(symbol):
-    global MAIN
-    size = getSize(symbol)
-    ps = size / MAIN['main_5'][0]
+def getPS(symbol,date):
+    '市销率 PS = 当前市值 / 营业收入'
+    df = getReportsBy(date)
+    size = getSize(symbol,date)
+    ps = size / df['main_5'].iloc[0]
     return ps
 
-
-def getPEG(symbol):
-    global MAIN
-    price_close = price.getClose(symbol)
-    pe = getPE(symbol)
-    peg = pe / MAIN['main_14'][0]
+def getPEG(symbol, date):
+    'PEG = PE / EPS增长率'
+    df = getReportsBy(date)
+    price_close = price.getCloseAt(symbol, date, local = LOCAL)
+    pe = getPE(symbol,date)
+    peg = pe / df['main_14'].iloc[0]
     return peg
 
-
-def getROA(symbol):
-    global MAIN, PROFIT, DEBT
-    total_capatal = polishValue(DEBT['debt_24'][
-                                0]) + polishValue(DEBT['debt_41'][0]) + polishValue(DEBT['debt_50'][0])
-    roa = PROFIT['profit_15'][0] / total_capatal
+def getROA(symbol, date):
+    df = getReportsBy(date)
+    total_capatal = polishValue(df['debt_24'].iloc[0])    \
+                    + polishValue(df['debt_41'].iloc[0])  \
+                    + polishValue(df['debt_50'].iloc[0])
+    roa = df['profit_15'].iloc[0] / total_capatal
     return roa
 
 
-def getROE(symbol):
-    global MAIN, PROFIT, DEBT
-    roe = PROFIT['profit_15'][0] / DEBT['debt_24'][0]
+def getROE(symbol,date):
+    df = getReportsBy(date)
+    roe = df['profit_15'].iloc[0] / df['debt_24'].iloc[0]
     return roe
 
 
-def getEV(symbol):
-    global MAIN, PROFIT, DEBT
-    price_close = price.getClose(symbol)
-    ev = polishValue(DEBT['debt_58'][0]) * price_close + \
-        polishValue(DEBT['debt_79'][0]) - polishValue(DEBT['debt_1'][0])
+def getEV(symbol,date):
+    df = getReportsBy(date)
+    price_close = price.getCloseAt(symbol,date, local = LOCAL)
+    ev = polishValue(df['debt_58'].iloc[0]) * price_close + \
+        polishValue(df['debt_79'].iloc[0]) - polishValue(df['debt_1'].iloc[0])
     return ev
 
 
-def getEBIT(symbol):
-    global MAIN, PROFIT, DEBT
-    ebit = polishValue(PROFIT['profit_15'][
-                       0]) + polishValue(PROFIT['profit_14'][0]) + polishValue(PROFIT['profit_2'][0])
+def getEBIT(symbol,date):
+    df = getReportsBy(date)
+    ebit = polishValue(df['profit_15'].iloc[0])   \
+            + polishValue(df['profit_14'].iloc[0])  \
+            + polishValue(df['profit_2'].iloc[0])
     return ebit
 
+
+def getEBIT_EV(symbol,date):
+    ebit_ev = getEBIT(symbol,date) / getEV(symbol,date)
+    return ebit_ev
+
+
+def getLeverage(symbol,date):
+    '财务杠杆：负债 / 股东权益'
+    df = getReportsBy(date)
+    leverage = polishValue(df['debt_11'].iloc[0]) / polishValue(df['debt_24'].iloc[0])
+    return leverage
+
+def getFCF(symbol,date):    
+    'FCF = 营运现金流(cash_7) - 利息支出(profit_2) - 税费支出(profit_24) - Capex (cash_10)'
+    df = getReportsBy(date)
+    fcf = polishValue(df['cash_7'].iloc[0])     \
+            - polishValue(df['profit_2'].iloc[0])  \
+            - polishValue(df['profit_24'].iloc[0]) \
+            - polishValue(df['cash_20'].iloc[0])
+    return fcf
+
+def getCRR(symbol,date):
+    '现金收益率: 自由现金流 / EV'    
+    df = getReportsBy(date)
+    fcf = getFCF(symbol,date)
+    ev = getEV(symbol,date)
+    crr = fcf / ev
+    return crr
 
 def polishValue(var):
     if var is None:
         var = 0
     return var
 
-if __name__ == '__main__':
- 
-    df = stocks.getAllStocks()
-    count = 1
 
-    for row in df.iterrows():
-        name = row[1][1]
-        symbol = row[1][0]
-        symbol = stocks.converSymbol(symbol)
+def getReportDateList():
+    year_now = datetime.now().year.numerator
+    year_start  = int(start_date[0:4])
+    date_list = []
+    while year_start < year_now:
+        date = str(year_start) + '-12-31'
+        year_start += 1
+        date_list.append(date)
+    return date_list
+
+def getReportQuartList():
+    year_now = datetime.now().year.numerator
+    month_now = datetime.now().month.numerator
+    year_start  = int(start_date[0:4])
+    date_list = []
+    while year_start < year_now:
+        date_4 = str(year_start) + '-12-31'    
+        date_3 = str(year_start) + '-09-30'
+        date_2 = str(year_start) + '-06-30'
+        date_1 = str(year_start) + '-03-31'
+        year_start += 1
+        date_list.append(date_1)
+        date_list.append(date_2)
+        date_list.append(date_3)
+        date_list.append(date_4)
+    if(month_now > 4): date_list.append(str(year_now) + '-03-31')     
+    if(month_now > 7): date_list.append(str(year_now) + '-06-30')
+    if(month_now > 10): date_list.append(str(year_now) + '-09-30')
+
+    return date_list
+
+def calYearOf(symbol,date):
+    try:
+        if stocks.queryIndustry(symbol) != '银行':
+            init(symbol)
+            measure = Series({
+                            'symbol':       symbol,
+                            'price':        price.getCloseAt(symbol,date),
+                            'eps':          getEPS(symbol,date),
+                            'peg':          getPEG(symbol,date),
+                            'roa':          getROA(symbol,date),
+                            'pe':           getPE(symbol,date),
+                            'pb':           getPB(symbol,date),
+                            'ps':           getPS(symbol,date),
+                            'ev':           getEV(symbol,date),
+                            'ebit':         getEBIT(symbol,date),
+                            'fcf':          getFCF(symbol,date),
+                            'crr':          getCRR(symbol,date),
+                            'leverage':     getLeverage(symbol,date),
+                            'ebit_ev':      getEBIT_EV(symbol,date)}, 
+                            index=['symbol','price','eps','pe','pb','ps','peg','crr','leverage','ebit_ev'])
+            return measure
+    except Exception, e:
+        traceback.print_exc()
+        raise e
+
+def calHistoryOf(symbol,byQuart = False):
+    date_list = getReportDateList()
+    if byQuart: date_list = getReportQuartList()
+    measures = {}
+    for date in date_list:
         try:
-            if stocks.queryIndustry(symbol) != '银行':
-                init(symbol)
-                print('股票代码 ：' + symbol)
-                print('PEG  of  '     + str(name) + ' : ' + str(getPEG(symbol)))
-                print('ROA  of  '     + str(name) + ' : ' + str(getROA(symbol)))
-                print('PE   of  '     + str(name) + ' : ' + str(getPE(symbol)))
-                print('PB   of  '     + str(name) + ' : ' + str(getPB(symbol)))
-                print('PS   of  '     + str(name) + ' : ' + str(getPS(symbol)))
-                print('EV   of  '     + str(name) + ' : ' + str(getEV(symbol))   + '万元')
-                print('EBIT of  '     + str(name) + ' : ' + str(getEBIT(symbol)) + '万元')
-                print('----------------------------------------------------------------')
-                count = count + 1
-                if count > 200 : break
-            else:
-                print(str(name) + '是一家银行')
-                print('----------------------------------------------------------------')
+            print('Dealing with : ' + symbol + ' in ' + date)
+            measure = calYearOf(symbol,date)
+            measures[date] = measure
         except Exception, e:
-            print(e)
-        finally:
-            pass
+            print('no data from date: ' + date)
+            # pass
+    result = pd.DataFrame(measures).T #行变列转置
+    result.index.name = 'date'
+    return result        
 
+# def insertMeasures(num):
+#     df = stocks.getAllStocks()
+#     measures = {}
+#     result = pd.DataFrame
+#     count = 0
+#     for row in df.iterrows():
+#         name = row[1][1]
+#         symbol = stocks.converSymbol(row[1][0])
+#         count = count + 1
+#         if count > num : break
+#         try:
+#             if stocks.queryIndustry(symbol) != '银行':
+#                 init(symbol)
+#                 print(name)
+#                 measure = Series({
+#                             'price':        price.getClose(symbol),
+#                             'peg':          getPEG(symbol),
+#                             'roa':          getROA(symbol),
+#                             'pe':           getPE(symbol),
+#                             'pb':           getPB(symbol),
+#                             'ps':           getPS(symbol),
+#                             'ev':           getEV(symbol),
+#                             'ebit':         getEBIT(symbol),
+#                             'leverage':     getLeverage(symbol),
+#                             'ebit_ev':      getEBIT_EV(symbol)}, 
+#                             index=['price','pe','pb','ps','roa','peg','ev','ebit','leverage','ebit_ev'])
+#                 measures[symbol] = measure
+#                 print('----------------------------')
+#             else:
+#                 print('跳过银行： ' + str(name) )
+#                 print('----------------------------')
+#         except Exception, e:
+#             traceback.print_exc()
+#             pass
+#     result = pd.DataFrame(measures).T #行变列转置
+#     result.index.name = 'symbol'
+#     result = result.sort_values(by=['ebit_ev'], ascending=False) 
+#     print(result)
+#     insertMeasures2local(result)
+   
+
+if __name__ == '__main__':
+    print(calHistoryOf('000002',byQuart = False))
     
+    # global LOCAL
+    # init('000002')
+    # print(getPE('000002','2004-12-31'))
+    # print(LOCAL)
+    # LOCAL = False
+    # print(getPE('000002','2004-12-31'))
+    # print(LOCAL)
 
